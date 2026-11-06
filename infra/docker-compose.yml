@@ -1,0 +1,38 @@
+# vAna app infra: Postgres + MinIO. Langfuse lives in infra/langfuse/.
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: vana
+      POSTGRES_PASSWORD: vana
+      POSTGRES_DB: vana
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - vana_pg:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U vana"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  minio:
+    image: minio/minio
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: vana
+      MINIO_ROOT_PASSWORD: vana-secret-change-me
+    ports:
+      - "127.0.0.1:9000:9000"
+      - "127.0.0.1:9001:9001"
+    volumes:
+      - vana_minio:/data
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  vana_pg:
+  vana_minio:

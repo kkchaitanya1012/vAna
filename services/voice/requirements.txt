@@ -1,0 +1,5 @@
+pipecat-ai[runner,daily,deepgram,openrouter,cartesia,silero,webrtc]==1.15.0
+python-dotenv
+# Optional: personas from Langfuse instead of personas/*.md
+# langfuse
+pyyaml

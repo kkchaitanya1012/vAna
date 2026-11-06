@@ -1,0 +1,11 @@
+aiosqlite==0.22.1
+alembic==1.20.1
+asyncpg==0.32.0
+fastapi==0.162.0
+httpx==0.28.1
+pydantic-settings==2.16.2
+pytest==9.2.0
+pytest-asyncio==1.4.1.post1
+SQLAlchemy==2.1.8
+uvicorn==0.54.0
+PyYAML==6.0.3

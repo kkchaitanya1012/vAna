@@ -1,0 +1,259 @@
+# Provider catalog. Read by the API (GET /providers, cost estimates) and the voice server (building services).
+# Prices are ESTIMATES in USD. Check each vendor's pricing page and edit here. `null` means unknown: the
+# cost estimate for that part is then left out instead of guessed.
+# Entry fields: label, env (API key name), service (dotted pipecat class, built with api_key + Settings),
+# default_model / default_voice, models / voices, custom_model / custom_voice (user may type an id),
+# live_voices (cartesia | elevenlabs: the API lists voices from the vendor's own account), note.
+# last_checked: 2026-11-05 (OpenRouter prices from its live model list; others from public price pages)
+
+stt:
+  deepgram:
+    label: Deepgram
+    env: DEEPGRAM_API_KEY
+    service: pipecat.services.deepgram.stt.DeepgramSTTService
+    default_model: nova-3-general
+    models:
+      - { id: nova-3-general, label: Nova 3, price_per_min: 0.0077 }   # sources disagree: 0.0048 to 0.0077
+  assemblyai:
+    label: AssemblyAI
+    env: ASSEMBLYAI_API_KEY
+    service: pipecat.services.assemblyai.stt.AssemblyAISTTService
+    default_model: universal-3-6-pro
+    models:
+      - { id: universal-3-6-pro, label: Universal 3.6 Pro, price_per_min: 0.0075 }   # $0.45 per hour streaming; sources agree
+  openai:
+    label: OpenAI Transcribe
+    env: OPENAI_API_KEY
+    service: pipecat.services.openai.stt.OpenAISTTService
+    default_model: gpt-transcribe
+    custom_model: true
+    note: Batch style. Waits for you to stop talking, then sends the clip, so it adds delay compared with streaming providers.
+    models:
+      - { id: gpt-transcribe, label: GPT Transcribe, price_per_min: null }
+  groq:
+    label: Groq Whisper
+    env: GROQ_API_KEY
+    service: pipecat.services.groq.stt.GroqSTTService
+    default_model: whisper-large-v3-turbo
+    note: Batch style. Waits for you to stop talking, then sends the clip.
+    models:
+      - { id: whisper-large-v3-turbo, label: Whisper Large v3 Turbo, price_per_min: 0.00067 }   # $0.04 per hour
+      - { id: whisper-large-v3, label: Whisper Large v3, price_per_min: 0.00185 }               # $0.111 per hour
+  elevenlabs:
+    label: ElevenLabs Scribe
+    env: ELEVENLABS_API_KEY
+    service: pipecat.services.elevenlabs.stt.ElevenLabsRealtimeSTTService
+    default_model: scribe_v2_realtime
+    models:
+      - { id: scribe_v2_realtime, label: Scribe v2 Realtime, price_per_min: null }
+  cartesia:
+    label: Cartesia Ink
+    env: CARTESIA_API_KEY
+    service: pipecat.services.cartesia.stt.CartesiaSTTService
+    default_model: ink-whisper
+    models:
+      - { id: ink-whisper, label: Ink Whisper, price_per_min: null }
+  soniox:
+    label: Soniox
+    env: SONIOX_API_KEY
+    service: pipecat.services.soniox.stt.SonioxSTTService
+    default_model: stt-rt-v5
+    models:
+      - { id: stt-rt-v5, label: Realtime v5, price_per_min: null }
+  gladia:
+    label: Gladia
+    env: GLADIA_API_KEY
+    service: pipecat.services.gladia.stt.GladiaSTTService
+    default_model: solaria-1
+    models:
+      - { id: solaria-1, label: Solaria 1, price_per_min: null }
+  together:
+    label: Together AI Whisper
+    env: TOGETHER_API_KEY
+    service: pipecat.services.together.stt.TogetherSTTService
+    default_model: openai/whisper-large-v3
+    models:
+      - { id: openai/whisper-large-v3, label: Whisper Large v3, price_per_min: null }
+
+llm:
+  openrouter:
+    label: OpenRouter
+    env: OPENROUTER_API_KEY
+    default_model: meta-llama/llama-3.3-70b-instruct
+    custom_model: true           # any OpenRouter model id is accepted; unlisted ones have no price estimate
+    models:
+      - { id: meta-llama/llama-3.3-70b-instruct, label: Llama 3.3 70B, in_per_m: 0.20, out_per_m: 0.52 }
+      - { id: meta-llama/llama-3.1-8b-instruct, label: Llama 3.1 8B, in_per_m: 0.05, out_per_m: 0.08 }
+      - { id: google/gemma-4-26b-a4b-it, label: Gemma 4 26B, in_per_m: 0.031, out_per_m: 0.093 }
+      - { id: mistralai/ministral-8b-2512, label: Ministral 8B, in_per_m: 0.15, out_per_m: 0.15 }
+      - { id: liquid/lfm-2.5-24b-a2b, label: Liquid LFM 2.5 24B, in_per_m: 0.05, out_per_m: 0.70 }
+      - { id: mistralai/ministral-3b-2512, label: Ministral 3B, in_per_m: 0.10, out_per_m: 0.10 }
+      - { id: mistralai/ministral-14b-2512, label: Ministral 14B, in_per_m: 0.20, out_per_m: 0.20 }
+      - { id: qwen/qwen3-30b-a3b-instruct-2507, label: Qwen3 30B A3B Instruct, in_per_m: 0.10, out_per_m: 0.30 }
+      - { id: google/gemini-2.5-flash-lite, label: Gemini 2.5 Flash Lite, in_per_m: 0.10, out_per_m: 0.40 }
+      - { id: google/gemma-4-31b-it, label: Gemma 4 31B, in_per_m: 0.20, out_per_m: 0.40 }
+      - { id: mistralai/mistral-small-2603, label: Mistral Small 2603, in_per_m: 0.15, out_per_m: 0.60 }
+      - { id: openai/gpt-oss-20b, label: GPT-OSS 20B, in_per_m: 0.03, out_per_m: 0.13, note: Reasoning model. The first spoken word can wait for hidden thinking. }
+      - { id: openai/gpt-oss-120b, label: GPT-OSS 120B, in_per_m: 0.01, out_per_m: 0.037, note: Reasoning model. Price is the cheapest host; routing may pick a dearer one. }
+  groq:
+    label: Groq
+    env: GROQ_API_KEY
+    default_model: openai/gpt-oss-120b
+    models:
+      - { id: openai/gpt-oss-120b, label: GPT-OSS 120B, in_per_m: 0.15, out_per_m: 0.60, note: Reasoning model. }
+      - { id: openai/gpt-oss-20b, label: GPT-OSS 20B, in_per_m: 0.075, out_per_m: 0.30, note: Reasoning model. }
+      - { id: qwen/qwen3.8-27b, label: Qwen 3.8 27B, in_per_m: null, out_per_m: null }
+  openai:
+    label: OpenAI
+    env: OPENAI_API_KEY
+    default_model: gpt-4o-mini
+    models:
+      - { id: gpt-4o-mini, label: GPT-4o mini, in_per_m: 0.15, out_per_m: 0.60 }
+
+tts:
+  # Listed cheapest first. The new-session form picks the first provider whose key is set.
+  deepgram:
+    label: Deepgram Aura
+    env: DEEPGRAM_API_KEY          # same key as speech to text
+    service: pipecat.services.deepgram.tts.DeepgramTTSService
+    default_voice: aura-asteria-en
+    price_per_1k_chars: null       # priced per voice below
+    note: Aura 1 is the cheapest voice here. Aura 2 sounds more natural. All 53 voice ids checked against the live API on 2026-11-05.
+    voices:
+      - { id: aura-asteria-en, label: Asteria (Aura 1), price_per_1k_chars: 0.015 }
+      - { id: aura-luna-en, label: Luna (Aura 1), price_per_1k_chars: 0.015 }
+      - { id: aura-stella-en, label: Stella (Aura 1), price_per_1k_chars: 0.015 }
+      - { id: aura-athena-en, label: Athena (Aura 1), price_per_1k_chars: 0.015 }
+      - { id: aura-hera-en, label: Hera (Aura 1), price_per_1k_chars: 0.015 }
+      - { id: aura-orion-en, label: Orion (Aura 1), price_per_1k_chars: 0.015 }
+      - { id: aura-arcas-en, label: Arcas (Aura 1), price_per_1k_chars: 0.015 }
+      - { id: aura-perseus-en, label: Perseus (Aura 1), price_per_1k_chars: 0.015 }
+      - { id: aura-angus-en, label: Angus (Aura 1), price_per_1k_chars: 0.015 }
+      - { id: aura-orpheus-en, label: Orpheus (Aura 1), price_per_1k_chars: 0.015 }
+      - { id: aura-helios-en, label: Helios (Aura 1), price_per_1k_chars: 0.015 }
+      - { id: aura-zeus-en, label: Zeus (Aura 1), price_per_1k_chars: 0.015 }
+      - { id: aura-2-amalthea-en, label: Amalthea (Aura 2), price_per_1k_chars: 0.030 }
+      - { id: aura-2-andromeda-en, label: Andromeda (Aura 2), price_per_1k_chars: 0.030 }
+      - { id: aura-2-apollo-en, label: Apollo (Aura 2), price_per_1k_chars: 0.030 }
+      - { id: aura-2-arcas-en, label: Arcas (Aura 2), price_per_1k_chars: 0.030 }
+      - { id: aura-2-aries-en, label: Aries (Aura 2), price_per_1k_chars: 0.030 }
+      - { id: aura-2-asteria-en, label: Asteria (Aura 2), price_per_1k_chars: 0.030 }
+      - { id: aura-2-athena-en, label: Athena (Aura 2), price_per_1k_chars: 0.030 }
+      - { id: aura-2-atlas-en, label: Atlas (Aura 2), price_per_1k_chars: 0.030 }
+      - { id: aura-2-aurora-en, label: Aurora (Aura 2), price_per_1k_chars: 0.030 }
+      - { id: aura-2-callista-en, label: Callista (Aura 2), price_per_1k_chars: 0.030 }
+      - { id: aura-2-cordelia-en, label: Cordelia (Aura 2), price_per_1k_chars: 0.030 }
+      - { id: aura-2-cora-en, label: Cora (Aura 2), price_per_1k_chars: 0.030 }
+      - { id: aura-2-delia-en, label: Delia (Aura 2), price_per_1k_chars: 0.030 }
+      - { id: aura-2-draco-en, label: Draco (Aura 2), price_per_1k_chars: 0.030 }
+      - { id: aura-2-electra-en, label: Electra (Aura 2), price_per_1k_chars: 0.030 }
+      - { id: aura-2-harmonia-en, label: Harmonia (Aura 2), price_per_1k_chars: 0.030 }
+      - { id: aura-2-helena-en, label: Helena (Aura 2), price_per_1k_chars: 0.030 }
+      - { id: aura-2-hera-en, label: Hera (Aura 2), price_per_1k_chars: 0.030 }
+      - { id: aura-2-hermes-en, label: Hermes (Aura 2), price_per_1k_chars: 0.030 }
+      - { id: aura-2-hyperion-en, label: Hyperion (Aura 2), price_per_1k_chars: 0.030 }
+      - { id: aura-2-iris-en, label: Iris (Aura 2), price_per_1k_chars: 0.030 }
+      - { id: aura-2-janus-en, label: Janus (Aura 2), price_per_1k_chars: 0.030 }
+      - { id: aura-2-juno-en, label: Juno (Aura 2), price_per_1k_chars: 0.030 }
+      - { id: aura-2-jupiter-en, label: Jupiter (Aura 2), price_per_1k_chars: 0.030 }
+      - { id: aura-2-luna-en, label: Luna (Aura 2), price_per_1k_chars: 0.030 }
+      - { id: aura-2-mars-en, label: Mars (Aura 2), price_per_1k_chars: 0.030 }
+      - { id: aura-2-minerva-en, label: Minerva (Aura 2), price_per_1k_chars: 0.030 }
+      - { id: aura-2-neptune-en, label: Neptune (Aura 2), price_per_1k_chars: 0.030 }
+      - { id: aura-2-odysseus-en, label: Odysseus (Aura 2), price_per_1k_chars: 0.030 }
+      - { id: aura-2-ophelia-en, label: Ophelia (Aura 2), price_per_1k_chars: 0.030 }
+      - { id: aura-2-orion-en, label: Orion (Aura 2), price_per_1k_chars: 0.030 }
+      - { id: aura-2-orpheus-en, label: Orpheus (Aura 2), price_per_1k_chars: 0.030 }
+      - { id: aura-2-pandora-en, label: Pandora (Aura 2), price_per_1k_chars: 0.030 }
+      - { id: aura-2-phoebe-en, label: Phoebe (Aura 2), price_per_1k_chars: 0.030 }
+      - { id: aura-2-pluto-en, label: Pluto (Aura 2), price_per_1k_chars: 0.030 }
+      - { id: aura-2-saturn-en, label: Saturn (Aura 2), price_per_1k_chars: 0.030 }
+      - { id: aura-2-selene-en, label: Selene (Aura 2), price_per_1k_chars: 0.030 }
+      - { id: aura-2-thalia-en, label: Thalia (Aura 2), price_per_1k_chars: 0.030 }
+      - { id: aura-2-theia-en, label: Theia (Aura 2), price_per_1k_chars: 0.030 }
+      - { id: aura-2-vesta-en, label: Vesta (Aura 2), price_per_1k_chars: 0.030 }
+      - { id: aura-2-zeus-en, label: Zeus (Aura 2), price_per_1k_chars: 0.030 }
+  groq:
+    label: Groq Orpheus
+    env: GROQ_API_KEY
+    service: pipecat.services.groq.tts.GroqTTSService
+    default_voice: autumn
+    price_per_1k_chars: 0.022
+    note: One-time setup. Accept the model terms at console.groq.com/playground?model=canopylabs%2Forpheus-v1-english or calls fail.
+    voices:
+      - { id: autumn, label: Autumn }
+      - { id: diana, label: Diana }
+      - { id: hannah, label: Hannah }
+      - { id: austin, label: Austin }
+      - { id: daniel, label: Daniel }
+      - { id: troy, label: Troy }
+  openai:
+    label: OpenAI
+    env: OPENAI_API_KEY
+    service: pipecat.services.openai.tts.OpenAITTSService
+    default_voice: alloy
+    price_per_1k_chars: null
+    voices:
+      - { id: alloy, label: Alloy }
+      - { id: ash, label: Ash }
+      - { id: ballad, label: Ballad }
+      - { id: cedar, label: Cedar }
+      - { id: coral, label: Coral }
+      - { id: echo, label: Echo }
+      - { id: fable, label: Fable }
+      - { id: marin, label: Marin }
+      - { id: nova, label: Nova }
+      - { id: onyx, label: Onyx }
+      - { id: sage, label: Sage }
+      - { id: shimmer, label: Shimmer }
+      - { id: verse, label: Verse }
+  cartesia:
+    label: Cartesia
+    env: CARTESIA_API_KEY
+    service: pipecat.services.cartesia.tts.CartesiaTTSService
+    default_voice: 71a7ad14-091c-4e8e-a314-022ece01c121
+    price_per_1k_chars: 0.05     # 1 credit per character; $0.05 per 1k assumes the Pro plan
+    live_voices: cartesia        # the full library is fetched from Cartesia with your key
+    custom_voice: true
+    voices:
+      - { id: 71a7ad14-091c-4e8e-a314-022ece01c121, label: British reading lady }
+  elevenlabs:
+    label: ElevenLabs
+    env: ELEVENLABS_API_KEY
+    service: pipecat.services.elevenlabs.tts.ElevenLabsTTSService
+    default_voice: 21m00Tcm4TlvDq8ikWAM
+    price_per_1k_chars: 0.05     # Flash/Turbo API rate; two sources say 0.024 to 0.04, so check the vendor page
+    live_voices: elevenlabs      # the full library is fetched from ElevenLabs with your key
+    custom_voice: true
+    voices:
+      - { id: 21m00Tcm4TlvDq8ikWAM, label: Rachel }
+  xai:
+    label: xAI Grok Voice
+    env: XAI_API_KEY
+    service: pipecat.services.xai.tts.XAITTSService
+    default_voice: eve
+    price_per_1k_chars: null
+    custom_voice: true
+    note: Only the default voice is listed. Type any other voice id from the xAI docs.
+    voices:
+      - { id: eve, label: Eve }
+  together:
+    label: Together AI
+    env: TOGETHER_API_KEY
+    service: pipecat.services.together.tts.TogetherTTSService
+    default_voice: af_heart
+    price_per_1k_chars: null
+    custom_voice: true
+    note: Kokoro voices. Only the default is listed. Type another Kokoro voice id, for example af_bella.
+    voices:
+      - { id: af_heart, label: Heart }
+  smallest:
+    label: Smallest AI
+    env: SMALLEST_API_KEY
+    service: pipecat.services.smallest.tts.SmallestTTSService
+    default_voice: sophia
+    price_per_1k_chars: null
+    custom_voice: true
+    note: Only the default voice is listed. Type any other voice id from the Smallest AI docs.
+    voices:
+      - { id: sophia, label: Sophia }
