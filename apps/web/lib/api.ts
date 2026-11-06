@@ -64,18 +64,31 @@ export interface SessionDetail extends SessionOut {
   audio: AudioInfo | null;
 }
 
+export class ApiError extends Error {
+  constructor(message: string, readonly status: number) {
+    super(message);
+    this.name = "ApiError";
+  }
+}
+
 async function call<T>(path: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(`${API_URL}${path}`, {
-    ...init,
-    cache: "no-store",
-    headers: { "content-type": "application/json", ...init?.headers },
-  });
+  let res: Response;
+  try {
+    res = await fetch(`${API_URL}${path}`, {
+      ...init,
+      cache: "no-store",
+      headers: { "content-type": "application/json", ...init?.headers },
+    });
+  } catch {
+    throw new ApiError("Could not reach the API. Check that it is running on port 8000.", 0);
+  }
   if (!res.ok) {
     let detail = res.statusText;
     try {
-      detail = (await res.json()).detail ?? detail;
+      const body = (await res.json()).detail;
+      if (typeof body === "string") detail = body;
     } catch {}
-    throw new Error(detail);
+    throw new ApiError(detail || `Request failed (${res.status})`, res.status);
   }
   return res.json() as Promise<T>;
 }

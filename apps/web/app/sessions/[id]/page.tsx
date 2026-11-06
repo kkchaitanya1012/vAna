@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { Readout } from "@/components/analytics/readout";
 import { SessionBoard } from "@/components/analytics/session-board";
@@ -6,7 +7,7 @@ import { PageSkeleton } from "@/components/skeleton";
 import { StatusBadge } from "@/components/status-badge";
 import { SpectrumBar, stageParts } from "@/components/spectrum-bar";
 import { ToneGlyph } from "@/components/tone-glyph";
-import { getSession, listSessions, type SessionDetail } from "@/lib/api";
+import { ApiError, getSession, listSessions, type SessionDetail } from "@/lib/api";
 import { fmtMs, fmtUsd, latencyTone, latencyVerdict } from "@/lib/format";
 import { STAGES, stageValues } from "@/lib/stages";
 
@@ -40,9 +41,14 @@ async function Detail({ params }: { params: Promise<{ id: string }> }) {
   try {
     s = await getSession(id);
   } catch (e) {
+    if (e instanceof ApiError && (e.status === 404 || e.status === 422)) notFound();
     return (
-      <div role="alert" className="panel max-w-md rounded-panel border-bad/40 p-6 text-bad">
-        {e instanceof Error ? e.message : "Session not found."}
+      <div role="alert" className="panel max-w-md rounded-panel border-bad/40 p-6">
+        <p className="text-bad">{e instanceof Error ? e.message : "Could not load this session."}</p>
+        <div className="mt-4 flex flex-wrap gap-3">
+          <Link href={`/sessions/${id}`} className="btn">Try again</Link>
+          <Link href="/sessions" className="btn btn-quiet">All sessions</Link>
+        </div>
       </div>
     );
   }

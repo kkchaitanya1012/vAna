@@ -12,7 +12,7 @@ import { VoiceOrb, type Activity } from "@/components/voice-orb";
 import { PageSkeleton } from "@/components/skeleton";
 import { VOICE_URL, endSession } from "@/lib/api";
 
-type Connection = "idle" | "connecting" | "connected" | "ending" | "error";
+type Connection = "idle" | "connecting" | "connected" | "ending" | "end-failed" | "error";
 
 export function LiveSession({ sessionId }: { sessionId: string }) {
   const router = useRouter();
@@ -113,6 +113,9 @@ export function LiveSession({ sessionId }: { sessionId: string }) {
       await endSession(sessionId);
     } catch (e) {
       console.error(e);
+      setError("The call is disconnected, but the API did not confirm the end. Your recording is kept. Try ending again.");
+      setConnection("end-failed");
+      return;
     }
     router.push(`/sessions/${sessionId}`);
   }, [router, sessionId]);
@@ -141,10 +144,10 @@ export function LiveSession({ sessionId }: { sessionId: string }) {
 
         <div className="flex shrink-0 flex-wrap items-center justify-center gap-3">
           <SpeakingIndicator state={orbState} localLevel={localLevel} remoteLevel={remoteLevel} />
-          {(live || connection === "ending") ? (
+          {(live || connection === "ending" || connection === "end-failed") ? (
             <button onClick={end} disabled={connection === "ending"} className="btn btn-quiet">
               <Stop size={18} weight="fill" aria-hidden />
-              {connection === "ending" ? "Ending" : "End session"}
+              {connection === "ending" ? "Ending" : connection === "end-failed" ? "Try ending again" : "End session"}
             </button>
           ) : (
             <button onClick={connect} disabled={connection === "connecting"} className="btn">
