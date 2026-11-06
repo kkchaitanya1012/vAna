@@ -77,6 +77,7 @@ async function call<T>(path: string, init?: RequestInit): Promise<T> {
     res = await fetch(`${API_URL}${path}`, {
       ...init,
       cache: "no-store",
+      credentials: "include",
       headers: { "content-type": "application/json", ...init?.headers },
     });
   } catch {

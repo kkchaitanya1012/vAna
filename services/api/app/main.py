@@ -10,19 +10,21 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app import storage
 from app.config import settings
 from app.db import get_db
-from app import catalog, metrics, voices
+from app import catalog, extensions, metrics, voices
 from app.derive import finalize_session
 from app.models import Event, Session, Turn, utcnow
 from app.schemas import AudioInfo, CompareItem, EventsIn, SessionCreate, SessionCreated, SessionDetail, SessionOut, TurnOut
 from app.voice_client import VoiceClient, VoiceError, get_voice
 
-app = FastAPI(title="vAna API")
+app = FastAPI(title="vAna API", dependencies=[Depends(extensions.guard)])
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[settings.web_origin],
+    allow_credentials=True,  # lets an extension (for example a sign-in cookie) travel with browser calls
     allow_methods=["*"],
     allow_headers=["*"],
 )
+extensions.load(app)
 
 
 @app.get("/providers")
@@ -56,6 +58,7 @@ async def health():
 @app.post("/sessions", response_model=SessionCreated, status_code=201)
 async def create_session(
     body: SessionCreate,
+    request: Request,
     db: AsyncSession = Depends(get_db),
     voice: VoiceClient = Depends(get_voice),
 ):
@@ -86,6 +89,7 @@ async def create_session(
         s.prompt_version = int(version)
     s.prompt_hash = info.get("prompt_hash")
     await db.commit()
+    await extensions.emit("session_created", request=request, db=db, session_id=s.id)
     return SessionCreated(session_id=s.id, offer_url=f"{settings.public_voice_url}/api/offer")
 
 

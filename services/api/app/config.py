@@ -1,5 +1,6 @@
 from pathlib import Path
 
+from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -14,6 +15,7 @@ class Settings(BaseSettings):
     web_origin: str = "http://localhost:3000"
     audio_dir: str = str(ROOT / "data" / "audio")  # local storage; swap for S3/MinIO behind app/storage.py
     max_audio_mb: int = 200
+    extensions: str = Field("", validation_alias="VANA_EXTENSIONS")  # comma-separated module names, each with setup(app); empty = none
 
 
 settings = Settings()
