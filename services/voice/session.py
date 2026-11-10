@@ -1,6 +1,8 @@
 """One voice session: build the pipeline from a SessionConfig and run it."""
 
+import asyncio
 import os
+import time
 from dataclasses import dataclass, field
 
 from loguru import logger
@@ -33,10 +35,18 @@ class SessionConfig:
     stt: dict = field(default_factory=lambda: {"provider": "deepgram"})
     llm: dict = field(default_factory=lambda: {"provider": "openrouter", "model": "meta-llama/llama-3.3-70b-instruct"})
     tts: dict = field(default_factory=lambda: {"provider": "cartesia"})
+    created_at: float = field(default_factory=time.monotonic)  # lets the server drop a session nobody connected to
 
     def validate(self):
         for stage, cfg in (("stt", self.stt), ("llm", self.llm), ("tts", self.tts)):
             validate(stage, cfg)
+
+
+def _secs(name: str, default: float) -> float:
+    try:
+        return float(os.getenv(name, default))
+    except ValueError:
+        return default
 
 
 class SessionHandle:
@@ -72,6 +82,7 @@ async def run_session(transport: BaseTransport, cfg: SessionConfig, events=None,
     task = PipelineTask(
         pipeline,
         params=PipelineParams(enable_metrics=True, enable_usage_metrics=True),
+        idle_timeout_secs=_secs("VANA_IDLE_S", 60) or None,  # no speech either way for this long ends the call
         observers=[ConsoleMetricsObserver()] + ([SessionMetricsObserver(events)] if events else []),
     )
     if handle is not None:
@@ -95,9 +106,18 @@ async def run_session(transport: BaseTransport, cfg: SessionConfig, events=None,
         events.start()
         events.emit("session_started", {"persona": cfg.persona, "prompt_version": cfg.prompt_version,
                                         "llm_model": cfg.llm.get("model")})
+    async def hang_up_at_limit():
+        await asyncio.sleep(max_s)
+        logger.info(f"[{cfg.session_id}] call length limit ({max_s:.0f}s) reached")
+        await task.cancel()
+
+    max_s = _secs("VANA_MAX_CALL_S", 300)
+    limiter = asyncio.create_task(hang_up_at_limit()) if max_s > 0 else None
     try:
         await PipelineRunner(handle_sigint=handle_sigint).run(task)
     finally:
+        if limiter:
+            limiter.cancel()
         if events:
             if recorded.get("wav"):
                 await events.upload_audio(recorded["wav"])  # before session_closed, which triggers analysis

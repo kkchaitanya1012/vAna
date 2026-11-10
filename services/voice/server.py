@@ -6,6 +6,7 @@ Run:  .venv/bin/python server.py   (port 8100)
 import asyncio
 import hmac
 import os
+import time
 from pathlib import Path
 
 import uvicorn
@@ -27,7 +28,7 @@ from pipecat.transports.smallwebrtc.transport import SmallWebRTCTransport
 
 from events import ApiEvents
 from persona import list_personas, load_persona, prompt_hash
-from session import SessionConfig, SessionHandle, run_session
+from session import SessionConfig, SessionHandle, _secs, run_session
 
 API_URL = os.getenv("API_URL", "http://localhost:8000")
 WEB_ORIGIN = os.getenv("WEB_ORIGIN", "http://localhost:3000")
@@ -38,6 +39,14 @@ webrtc = SmallWebRTCRequestHandler()
 
 pending: dict[str, SessionConfig] = {}  # registered by /start, consumed by the first offer
 running: dict[str, SessionHandle] = {}
+
+
+def _prune_pending() -> None:
+    """Forget sessions that were started but never connected, so /start calls cannot pile up."""
+    ttl = _secs("VANA_PENDING_TTL_S", 60)
+    now = time.monotonic()
+    for sid in [k for k, c in pending.items() if now - c.created_at > ttl]:
+        del pending[sid]
 
 
 class StartBody(BaseModel):
@@ -61,6 +70,9 @@ async def require_internal(request: Request) -> None:
 
 @app.post("/start", status_code=202, dependencies=[Depends(require_internal)])
 async def start(body: StartBody):
+    _prune_pending()
+    if len(pending) + len(running) >= int(_secs("VANA_MAX_CONCURRENT", 10)):
+        raise HTTPException(503, "The demo is busy right now. Try again in a minute.")
     try:
         prompt, version = load_persona(body.persona)
         cfg = SessionConfig(body.session_id, body.persona, prompt, version, prompt_hash(prompt), body.stt, body.llm, body.tts)
@@ -90,6 +102,7 @@ async def offer(http_request: Request):
     # The browser client sends camelCase `requestData`; from_dict maps it.
     request = SmallWebRTCRequest.from_dict(await http_request.json())
     data = request.request_data or {}
+    _prune_pending()
     session_id = data.get("session_id") if isinstance(data, dict) else None
     cfg = pending.get(session_id) if session_id else None
     if cfg is None and request.pc_id is None:
