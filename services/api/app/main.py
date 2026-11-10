@@ -1,3 +1,4 @@
+import hmac
 import uuid
 from datetime import datetime, timezone
 
@@ -25,6 +26,13 @@ app.add_middleware(
     allow_headers=["*"],
 )
 extensions.load(app)
+
+
+async def require_internal(request: Request) -> None:
+    """Calls only the voice server should make (events, audio upload). No-op when VANA_INTERNAL_TOKEN is unset."""
+    token = settings.internal_token
+    if token and not hmac.compare_digest(request.headers.get("x-internal-token", "").encode(), token.encode()):
+        raise HTTPException(401, "internal token required")
 
 
 @app.get("/providers")
@@ -110,7 +118,7 @@ async def end_session(
     return s
 
 
-@app.post("/sessions/{session_id}/events", status_code=204)
+@app.post("/sessions/{session_id}/events", status_code=204, dependencies=[Depends(require_internal)])
 async def ingest_events(session_id: uuid.UUID, body: EventsIn, db: AsyncSession = Depends(get_db)):
     s = await db.get(Session, session_id)
     if s is None:
@@ -137,7 +145,7 @@ async def ingest_events(session_id: uuid.UUID, body: EventsIn, db: AsyncSession 
         await finalize_session(db, s)
 
 
-@app.put("/sessions/{session_id}/audio", status_code=204)
+@app.put("/sessions/{session_id}/audio", status_code=204, dependencies=[Depends(require_internal)])
 async def upload_audio(session_id: uuid.UUID, request: Request, db: AsyncSession = Depends(get_db)):
     """Raw WAV body from the voice server. Streamed to disk with a size cap."""
     s = await db.get(Session, session_id)

@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime, timezone
 from typing import Any
 
-from pydantic import BaseModel, ConfigDict, field_serializer
+from pydantic import BaseModel, ConfigDict, Field, field_serializer
 
 
 class SttConfig(BaseModel):
@@ -21,7 +21,7 @@ class TtsConfig(BaseModel):
 
 
 class SessionCreate(BaseModel):
-    persona: str = "default"
+    persona: str = Field("default", pattern=r"^[A-Za-z0-9_-]{1,64}$")
     stt: SttConfig = SttConfig()
     llm: LlmConfig = LlmConfig()
     tts: TtsConfig = TtsConfig()

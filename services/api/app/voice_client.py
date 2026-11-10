@@ -7,13 +7,17 @@ class VoiceError(Exception):
     pass
 
 
+def _headers() -> dict[str, str]:
+    return {"x-internal-token": settings.internal_token} if settings.internal_token else {}
+
+
 class VoiceClient:
     """Talks to the voice server's internal control endpoints."""
 
     async def start(self, session_id: str, body: dict) -> dict:
         try:
             async with httpx.AsyncClient(timeout=15) as c:
-                r = await c.post(f"{settings.voice_url}/start", json={"session_id": session_id, **body})
+                r = await c.post(f"{settings.voice_url}/start", json={"session_id": session_id, **body}, headers=_headers())
         except httpx.HTTPError as e:
             raise VoiceError(f"voice server unreachable: {e}") from e
         if r.status_code >= 400:
@@ -32,7 +36,7 @@ class VoiceClient:
     async def stop(self, session_id: str) -> None:
         try:
             async with httpx.AsyncClient(timeout=10) as c:
-                await c.post(f"{settings.voice_url}/stop", json={"session_id": session_id})
+                await c.post(f"{settings.voice_url}/stop", json={"session_id": session_id}, headers=_headers())
         except httpx.HTTPError:
             pass  # session is ending anyway
 

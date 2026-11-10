@@ -15,6 +15,7 @@ class Settings(BaseSettings):
     web_origin: str = "http://localhost:3000"
     audio_dir: str = str(ROOT / "data" / "audio")  # local storage; swap for S3/MinIO behind app/storage.py
     max_audio_mb: int = 200
+    internal_token: str = Field("", validation_alias="VANA_INTERNAL_TOKEN")  # shared with the voice server; empty = no check (local dev)
     extensions: str = Field("", validation_alias="VANA_EXTENSIONS")  # comma-separated module names, each with setup(app); empty = none
 
 

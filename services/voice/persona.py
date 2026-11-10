@@ -2,13 +2,17 @@
 
 import hashlib
 import os
+import re
 from pathlib import Path
 
 PERSONA_DIR = Path(__file__).parent / "personas"
+_NAME = re.compile(r"[A-Za-z0-9_-]{1,64}")
 
 
 def load_persona(name: str) -> tuple[str, str | None]:
     """Return (system_prompt, version). Version is None for file personas."""
+    if not _NAME.fullmatch(name):
+        raise ValueError(f"Invalid persona name '{name}'")  # also blocks '../' reaching other files
     if os.getenv("LANGFUSE_PUBLIC_KEY") and os.getenv("LANGFUSE_SECRET_KEY"):
         from langfuse import Langfuse  # optional dependency
 

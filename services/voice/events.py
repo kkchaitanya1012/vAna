@@ -6,6 +6,7 @@ drops duplicate seq values.
 """
 
 import asyncio
+import os
 import time
 
 import httpx
@@ -22,7 +23,9 @@ class ApiEvents:
         self._seq = 0
         self._t0 = time.monotonic()
         self._buf: list[dict] = []
-        self._http = httpx.AsyncClient(timeout=httpx.Timeout(5, read=60, write=120))
+        token = os.getenv("VANA_INTERNAL_TOKEN", "")
+        self._http = httpx.AsyncClient(timeout=httpx.Timeout(5, read=60, write=120),
+                                       headers={"x-internal-token": token} if token else {})
         self._task: asyncio.Task | None = None
         self._stopping = False
 

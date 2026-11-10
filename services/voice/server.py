@@ -4,12 +4,13 @@ Run:  .venv/bin/python server.py   (port 8100)
 """
 
 import asyncio
+import hmac
 import os
 from pathlib import Path
 
 import uvicorn
 from dotenv import load_dotenv
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import Depends, FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from loguru import logger
 from pydantic import BaseModel
@@ -51,7 +52,14 @@ class StopBody(BaseModel):
     session_id: str
 
 
-@app.post("/start", status_code=202)
+async def require_internal(request: Request) -> None:
+    """/start and /stop are for the API only. No-op when VANA_INTERNAL_TOKEN is unset (local dev)."""
+    token = os.getenv("VANA_INTERNAL_TOKEN", "")
+    if token and not hmac.compare_digest(request.headers.get("x-internal-token", "").encode(), token.encode()):
+        raise HTTPException(401, "internal token required")
+
+
+@app.post("/start", status_code=202, dependencies=[Depends(require_internal)])
 async def start(body: StartBody):
     try:
         prompt, version = load_persona(body.persona)
@@ -68,7 +76,7 @@ async def personas():
     return list_personas()
 
 
-@app.post("/stop", status_code=202)
+@app.post("/stop", status_code=202, dependencies=[Depends(require_internal)])
 async def stop(body: StopBody):
     pending.pop(body.session_id, None)
     handle = running.get(body.session_id)
