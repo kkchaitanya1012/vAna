@@ -22,6 +22,7 @@ def audio_duration_ms(session_id: uuid.UUID) -> float | None:
         return None
     try:
         with wave.open(str(p), "rb") as w:
-            return w.getnframes() / w.getframerate() * 1000
+            rate = w.getframerate()
+            return w.getnframes() / rate * 1000 if rate else None  # a header can claim 0
     except (wave.Error, EOFError):
         return None

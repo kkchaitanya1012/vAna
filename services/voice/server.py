@@ -105,7 +105,9 @@ async def offer(http_request: Request):
     _prune_pending()
     session_id = data.get("session_id") if isinstance(data, dict) else None
     cfg = pending.get(session_id) if session_id else None
-    if cfg is None and request.pc_id is None:
+    # A new connection needs a session registered by /start. A pc_id only helps renegotiate a connection we already hold;
+    # an invented one would otherwise open an orphan peer connection that nothing ever closes.
+    if cfg is None and (request.pc_id is None or request.pc_id not in webrtc._pcs_map):
         raise HTTPException(404, "Unknown session. Call POST /sessions on the API first.")
 
     async def on_connection(connection):

@@ -57,3 +57,25 @@ def test_unconnected_sessions_expire(monkeypatch):
     c.post("/start", json={"session_id": "old"})
     c.post("/start", json={"session_id": "new"})  # starting another prunes the expired one
     assert "old" not in server.pending
+
+
+def test_offer_with_invented_pc_id_opens_no_connection(monkeypatch):
+    import server
+
+    calls = []
+
+    async def fake_handle(request, webrtc_connection_callback):
+        calls.append(request.pc_id)
+        return {"sdp": "a", "type": "answer", "pc_id": request.pc_id}
+
+    monkeypatch.setattr(server, "pending", {})
+    monkeypatch.setattr(server.webrtc, "handle_web_request", fake_handle)
+    monkeypatch.setitem(server.webrtc._pcs_map, "known-pc", object())
+    c = TestClient(server.app)
+    offer = {"sdp": "v=0", "type": "offer"}
+
+    assert c.post("/api/offer", json=offer).status_code == 404  # no session, no pc_id
+    assert c.post("/api/offer", json={**offer, "pc_id": "invented"}).status_code == 404
+    assert calls == []  # nothing reached the WebRTC handler
+    assert c.post("/api/offer", json={**offer, "pc_id": "known-pc"}).status_code == 200  # renegotiating a held connection
+    assert calls == ["known-pc"]

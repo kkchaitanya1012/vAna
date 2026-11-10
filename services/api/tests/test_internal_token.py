@@ -27,3 +27,37 @@ async def test_no_token_configured_means_open(client):
 async def test_persona_name_is_validated(client):
     r = await client.post("/sessions", json={"persona": "../../README"})
     assert r.status_code == 422
+
+
+@pytest.mark.parametrize("voice_id", ["../voices", "a/b", "a?x=1", "a#b", "", "x" * 129, "a b"])
+async def test_voice_id_cannot_carry_url_characters(client, voice_id):
+    r = await client.post("/sessions", json={"tts": {"provider": "cartesia", "voice": voice_id}})
+    assert r.status_code == 422
+
+
+@pytest.mark.parametrize("voice_id", ["aura-2-thalia-en", "694f9389-aac1-45b6-b726-9d9369183238", "21m00Tcm4TlvDq8ikWAM"])
+async def test_normal_voice_ids_still_work(client, voice_id, monkeypatch):
+    async def ok(*a, **k):
+        return None
+
+    monkeypatch.setattr("app.voices.ensure_voice", ok)
+    assert (await client.post("/sessions", json={"tts": {"provider": "cartesia", "voice": voice_id}})).status_code == 201
+
+
+def test_wav_header_claiming_zero_frame_rate_has_no_duration(tmp_path, monkeypatch):
+    import io
+    import struct
+    import uuid
+    import wave
+
+    from app import storage
+
+    buf = io.BytesIO()
+    with wave.open(buf, "wb") as w:
+        w.setnchannels(1), w.setsampwidth(2), w.setframerate(16000), w.writeframes(b"\0\0" * 10)
+    raw = bytearray(buf.getvalue())
+    raw[24:28] = struct.pack("<I", 0)  # sample rate field
+    sid = uuid.uuid4()
+    monkeypatch.setattr(storage.settings, "audio_dir", str(tmp_path))
+    (tmp_path / f"{sid}.wav").write_bytes(bytes(raw))
+    assert storage.audio_duration_ms(sid) is None

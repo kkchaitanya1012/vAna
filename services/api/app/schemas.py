@@ -17,7 +17,7 @@ class LlmConfig(BaseModel):
 
 class TtsConfig(BaseModel):
     provider: str = "cartesia"
-    voice: str | None = None
+    voice: str | None = Field(None, pattern=r"^[A-Za-z0-9_.:-]{1,128}$")  # goes into vendor URLs, so no slashes or query characters
 
 
 class SessionCreate(BaseModel):

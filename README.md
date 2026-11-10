@@ -39,6 +39,16 @@ Everything selectable is in `config/providers.yaml`. A provider is one entry: it
 
 Tested with real calls: Deepgram, Groq Whisper, Cartesia (speech to text and voice), Deepgram Aura, Groq Orpheus. The rest build correctly but have not been run with a real key; expect to fix small details. Voice lists for Cartesia and ElevenLabs are fetched with your key (`GET /providers/tts/{provider}/voices`, cached for an hour). Providers marked `custom_voice` also accept any voice id typed by hand.
 
+## Before you expose it to the internet
+
+Local defaults are open on purpose. Before anyone else can reach the API or the voice server:
+
+- Set `VANA_INTERNAL_TOKEN` (a long random value, same in the API and voice server environments). Without it, the voice server's `/start` and `/stop` and the API's event and audio-upload routes accept anyone, so a stranger could start calls on your provider keys.
+- The voice server's `/api/offer` has to be public for browsers to connect. It only accepts a session that the API registered through `/start`.
+- Add your own sign-in or rate limits in front (see the optional extension seams in `services/api/app/extensions.py`), and set spend limits in each provider's dashboard.
+- The model and voice a caller picks are passed to the provider as given when the catalog allows a custom id (`custom_model`, `custom_voice`). Pin them if you host a public demo.
+- The web app sets no security headers by default. Add a Content-Security-Policy and `X-Frame-Options` if you serve it publicly, since it asks for the microphone.
+
 ## License
 
 Apache License 2.0. See `LICENSE` and `NOTICE`.
