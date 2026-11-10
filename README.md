@@ -38,3 +38,7 @@ Everything selectable is in `config/providers.yaml`. A provider is one entry: it
 | Voice | Deepgram Aura (53 voices), Groq Orpheus, OpenAI, Cartesia (full library, live), ElevenLabs (full library, live), xAI, Together AI, Smallest AI |
 
 Tested with real calls: Deepgram, Groq Whisper, Cartesia (speech to text and voice), Deepgram Aura, Groq Orpheus. The rest build correctly but have not been run with a real key; expect to fix small details. Voice lists for Cartesia and ElevenLabs are fetched with your key (`GET /providers/tts/{provider}/voices`, cached for an hour). Providers marked `custom_voice` also accept any voice id typed by hand.
+
+## License
+
+Apache License 2.0. See `LICENSE` and `NOTICE`.
